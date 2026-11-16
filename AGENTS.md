@@ -28,3 +28,5 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Users sign in with first + last name + password; `nameToEmail` in src/lib/auth.ts derives the internal auth email (auth requires an email), so names must be unique and auto-confirm stays on.
