@@ -1,76 +1,49 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { AppShell } from "@/components/AppShell";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { PlanOptions } from "@/components/PlanOptions";
+import { useSession } from "@/lib/auth";
+import { pageHead } from "@/lib/page-head";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Boards — Your boards" },
-      { name: "description", content: "A clean, simple board for your tasks: backlog, in progress, done." },
-      { property: "og:title", content: "Boards — Your boards" },
-      { property: "og:description", content: "A clean, simple board for your tasks." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-    ],
-  }),
-  component: () => (
-    <AppShell>
-      <BoardList />
-    </AppShell>
-  ),
+  head: () => pageHead("Boards — A little space for your work", "Simple, private task boards. Start free with 10 cards, or choose unlimited cards from $5 USD per month."),
+  component: Landing,
 });
-
-type Board = { id: string; name: string };
-
-function BoardList() {
-  const [boards, setBoards] = useState<Board[] | null>(null);
-  const [name, setName] = useState("");
-
-  async function load() {
-    const { data } = await supabase.from("boards").select("id,name").order("created_at");
-    setBoards(data ?? []);
-  }
-  useEffect(() => { load(); }, []);
-
-  async function create(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
-    await supabase.from("boards").insert({ name: name.trim() });
-    setName("");
-    load();
-  }
-  async function remove(id: string) {
-    if (!confirm("Delete this board and all its cards?")) return;
-    await supabase.from("boards").delete().eq("id", id);
-    load();
-  }
-
-  return (
-    <div>
-      <h1 className="text-3xl font-semibold tracking-tight">Your Boards</h1>
-      <form onSubmit={create} className="mt-8 flex max-w-md gap-2">
-        <Input placeholder="New board name" value={name} onChange={(e) => setName(e.target.value)} className="h-10 rounded-xl bg-card" />
-        <Button type="submit" className="h-10 rounded-xl"><Plus className="size-4" />Create</Button>
-      </form>
-      {boards && boards.length === 0 && (
-        <p className="mt-16 text-center text-muted-foreground">No boards yet. Create one to get started.</p>
-      )}
-      <div className="mt-10 grid grid-cols-3 gap-5">
-        {boards?.map((b) => (
-          <div key={b.id} className="group relative rounded-2xl bg-card shadow-card transition hover:-translate-y-0.5">
-            <Link to="/board/$id" params={{ id: b.id }} className="block h-32 p-6">
-              <span className="text-lg font-medium">{b.name}</span>
-            </Link>
-            <button aria-label="Delete board" onClick={() => remove(b.id)} className="absolute bottom-4 right-4 text-muted-foreground opacity-0 transition hover:text-destructive group-hover:opacity-100">
-              <Trash2 className="size-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+function Landing() {
+  const { session } = useSession();
+  return <div>
+    <header className="border-b border-border bg-card">
+      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-8">
+        <Link to="/" className="text-xl font-semibold">Boards</Link>
+        <div className="flex items-center gap-4">
+          {session ? <><Button variant="link" asChild><Link to="/account">Account</Link></Button><Button asChild><Link to="/boards">Open Boards</Link></Button></> : <><Button variant="link" asChild><Link to="/auth" search={{ mode: "signin" }}>Sign In</Link></Button><Button asChild><Link to="/auth" search={{ mode: "signup" }}>Create Account</Link></Button></>}
+        </div>
+      </nav>
+    </header>
+    <main>
+      <section className="bg-card pt-20 text-center">
+        <div className="mx-auto max-w-3xl px-8">
+          <h1 className="text-7xl font-semibold">Boards</h1>
+          <p className="mt-6 text-2xl text-muted-foreground">A little space for your work.</p>
+          <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-muted-foreground">From the first idea to the final task.<br />Keep it simple. Keep it yours.</p>
+          <div className="mt-7 flex justify-center gap-4"><Button size="lg" asChild>{session ? <Link to="/boards">Open Boards</Link> : <Link to="/auth" search={{ mode: "signup" }}>Get Started Free</Link>}</Button></div>
+        </div>
+        <div className="mx-auto mt-14 max-w-5xl px-8">
+          <img src="/boards-preview.png" width="1024" height="520" alt="A private board with Backlog, In Progress, and Done columns, and simple title-and-description cards" className="block w-full rounded-t-lg border border-b-0 border-border shadow-card" />
+        </div>
+      </section>
+      <section className="border-y border-border py-14">
+        <div className="mx-auto grid max-w-5xl grid-cols-3 gap-12 px-8">
+          <div><h2 className="text-lg font-semibold">Just the essentials.</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Backlog. In Progress. Done.<br />A title, a description, and room to focus.</p></div>
+          <div><h2 className="text-lg font-semibold">Your own space.</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Private boards for your projects.<br />No teams, invitations, or distractions.</p></div>
+          <div><h2 className="text-lg font-semibold">Room to grow.</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">Start with 10 cards for free.<br />Choose unlimited when you need more.</p></div>
+        </div>
+      </section>
+      <section className="mx-auto max-w-6xl px-8 py-20">
+        <div className="mb-10 text-center"><h2 className="text-3xl font-semibold">Simple plans.</h2><p className="mt-3 text-muted-foreground">A small start. As much room as you need.</p></div>
+        <PlanOptions current={session ? "free" : undefined} />
+        <p className="mt-6 text-center text-sm text-muted-foreground">Paid subscriptions are not yet available.</p>
+      </section>
+    </main>
+    <footer className="border-t border-border"><div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-7 text-sm text-muted-foreground"><span>Boards</span><span>Less noise. More done.</span></div></footer>
+  </div>;
 }

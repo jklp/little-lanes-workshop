@@ -14,6 +14,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_plans: {
+        Row: {
+          card_count: number
+          plan: string
+          user_id: string
+        }
+        Insert: {
+          card_count?: number
+          plan?: string
+          user_id: string
+        }
+        Update: {
+          card_count?: number
+          plan?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_plans_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boards: {
         Row: {
           created_at: string

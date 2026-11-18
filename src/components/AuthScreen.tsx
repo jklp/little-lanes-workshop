@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { nameToEmail } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Link, useNavigate } from "@tanstack/react-router";
 
-export function AuthScreen() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+export function AuthScreen({ mode }: { mode: "signin" | "signup" }) {
+  const navigate = useNavigate();
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [password, setPassword] = useState("");
@@ -35,6 +36,10 @@ export function AuthScreen() {
             ? "Name or password is incorrect."
             : m,
       );
+    } else if (res.data.session) {
+      await navigate({ to: "/boards" });
+    } else {
+      setError("Your account needs confirmation. Please contact the app owner.");
     }
   }
 
@@ -42,7 +47,7 @@ export function AuthScreen() {
     <div className="flex min-h-screen items-center justify-center">
       <form onSubmit={submit} className="w-[340px] space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-semibold tracking-tight">Boards</h1>
+          <h1 className="text-3xl font-semibold"><Link to="/">Boards</Link></h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "signin" ? "Sign in to continue." : "Create your account."}
           </p>
@@ -56,13 +61,11 @@ export function AuthScreen() {
         <Button type="submit" disabled={busy} className="h-11 w-full rounded-xl text-[15px]">
           {mode === "signin" ? "Sign In" : "Create Account"}
         </Button>
-        <button
-          type="button"
-          onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(null); }}
-          className="block w-full text-center text-sm text-primary"
-        >
+        <Button variant="link" asChild className="w-full">
+          <Link to="/auth" search={{ mode: mode === "signin" ? "signup" : "signin" }} onClick={() => setError(null)}>
           {mode === "signin" ? "Create an account" : "Already have an account? Sign in"}
-        </button>
+          </Link>
+        </Button>
       </form>
     </div>
   );

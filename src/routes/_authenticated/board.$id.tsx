@@ -2,13 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ChevronLeft, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { AppShell } from "@/components/AppShell";
+import { canAddCard } from "@/lib/plans";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
-export const Route = createFileRoute("/board/$id")({
+export const Route = createFileRoute("/_authenticated/board/$id")({
   head: () => ({
     meta: [
       { title: "Board — Boards" },
@@ -22,9 +23,9 @@ export const Route = createFileRoute("/board/$id")({
   component: () => {
     const { id } = Route.useParams();
     return (
-      <AppShell>
+      <>
         <Board id={id} />
-      </AppShell>
+      </>
     );
   },
 });
@@ -40,6 +41,8 @@ type Editing = { id?: string; title: string; description: string; status: Status
 
 function Board({ id }: { id: string }) {
   const [name, setName] = useState("");
+  const [allowed, setAllowed] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [cards, setCards] = useState<Card[]>([]);
   const [editing, setEditing] = useState<Editing | null>(null);
   const [dragOver, setDragOver] = useState<Status | null>(null);
@@ -49,6 +52,8 @@ function Board({ id }: { id: string }) {
       supabase.from("boards").select("name").eq("id", id).maybeSingle(),
       supabase.from("cards").select("id,title,description,status").eq("board_id", id).order("created_at"),
     ]);
+    const { data: allowance } = await supabase.from("account_plans").select("plan,card_count").maybeSingle();
+    setAllowed(canAddCard(allowance?.plan === "basic" || allowance?.plan === "premium" ? allowance.plan : "free", allowance?.card_count ?? 0));
     setName(b?.name ?? "");
     setCards((c ?? []) as Card[]);
   }
@@ -60,10 +65,12 @@ function Board({ id }: { id: string }) {
   }
 
   async function save() {
-    if (!editing || !editing.title.trim()) return;
+    if (!editing || !editing.title.trim() || busy) return;
+    setBusy(true);
     const payload = { title: editing.title.trim(), description: editing.description, status: editing.status };
-    if (editing.id) await supabase.from("cards").update(payload).eq("id", editing.id);
-    else await supabase.from("cards").insert({ ...payload, board_id: id });
+    const { error } = editing.id ? await supabase.from("cards").update(payload).eq("id", editing.id) : await supabase.from("cards").insert({ ...payload, board_id: id });
+    setBusy(false);
+    if (error) { toast.error(error.message); await load(); return; }
     setEditing(null);
     load();
   }
@@ -76,8 +83,9 @@ function Board({ id }: { id: string }) {
 
   return (
     <div>
-      <Link to="/" className="inline-flex items-center text-sm text-primary"><ChevronLeft className="size-4" />Boards</Link>
+      <Link to="/boards" className="inline-flex items-center text-sm text-primary"><ChevronLeft className="size-4" />Boards</Link>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">{name}</h1>
+      {!allowed && <p className="mt-4 text-sm text-muted-foreground">Free plan: 10-card limit reached. <Link to="/account" className="text-primary">View plans</Link></p>}
       <div className="mt-8 grid grid-cols-3 gap-5">
         {COLUMNS.map((col) => {
           const list = cards.filter((c) => c.status === col.key);
@@ -91,9 +99,9 @@ function Board({ id }: { id: string }) {
             >
               <div className="flex items-center justify-between px-2 pb-3 pt-1">
                 <h2 className="text-sm font-semibold">{col.label} <span className="ml-1 font-normal text-muted-foreground">{list.length}</span></h2>
-                <button aria-label={`Add card to ${col.label}`} onClick={() => setEditing({ title: "", description: "", status: col.key })} className="text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" disabled={!allowed} title={allowed ? "Add card" : "Free card limit reached"} aria-label={`Add card to ${col.label}`} onClick={() => setEditing({ title: "", description: "", status: col.key })} className="text-muted-foreground hover:text-foreground">
                   <Plus className="size-4" />
-                </button>
+                </Button>
               </div>
               <div className="space-y-2">
                 {list.map((c) => (
@@ -125,7 +133,7 @@ function Board({ id }: { id: string }) {
           )}
           <DialogFooter className="sm:justify-between">
             {editing?.id ? <Button variant="ghost" onClick={remove} className="text-destructive hover:text-destructive">Delete</Button> : <span />}
-            <Button onClick={save} className="rounded-xl">Save</Button>
+            <Button disabled={busy} onClick={save} className="rounded-xl">Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
