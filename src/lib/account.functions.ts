@@ -20,3 +20,17 @@ export const changeAccountName = createServerFn({ method: "POST" })
     if (updateError) throw new Error(/already|registered|exists/i.test(updateError.message) ? "An account with this name already exists." : "Your name could not be changed. Please try again.");
     return { success: true };
   });
+
+export const changeAccountPassword = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ password: z.string().min(6), currentPassword: z.string().min(1) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: current, error } = await context.supabase.auth.getUser();
+    if (error || !current.user?.email || current.user.id !== context.userId) throw new Error("Please sign in again.");
+    const { data: verified, error: invalid } = await context.supabase.auth.signInWithPassword({ email: current.user.email, password: data.currentPassword });
+    if (invalid || verified.user?.id !== context.userId) throw new Error("Current password is incorrect.");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(context.userId, { password: data.password });
+    if (updateError) throw new Error(updateError.message);
+    return { success: true };
+  });

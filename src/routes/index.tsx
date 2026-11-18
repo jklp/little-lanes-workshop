@@ -40,7 +40,7 @@ function Landing() {
       </section>
       <section className="mx-auto max-w-6xl px-8 py-20">
         <div className="mb-10 text-center"><h2 className="text-3xl font-semibold">Simple plans.</h2><p className="mt-3 text-muted-foreground">A small start. As much room as you need.</p></div>
-        <PlanOptions current={session ? "free" : undefined} />
+        <PlanOptions />
         <p className="mt-6 text-center text-sm text-muted-foreground">Paid subscriptions are not yet available.</p>
       </section>
     </main>

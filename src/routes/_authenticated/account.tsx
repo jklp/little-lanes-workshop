@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/auth";
-import { changeAccountName } from "@/lib/account.functions";
+import { changeAccountName, changeAccountPassword } from "@/lib/account.functions";
 import { pageHead } from "@/lib/page-head";
 import type { PlanId } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated/account")({
 function Account() {
   const { session } = useSession();
   const changeName = useServerFn(changeAccountName);
+  const changePassword = useServerFn(changeAccountPassword);
   const [first, setFirst] = useState("");
   const [last, setLast] = useState("");
   const [namePassword, setNamePassword] = useState("");
@@ -47,8 +48,7 @@ function Account() {
   async function savePassword(e: React.FormEvent) {
     e.preventDefault(); setBusy(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password, current_password: currentPassword });
-      if (error) throw error;
+      await changePassword({ data: { password, currentPassword } });
       setPassword(""); setCurrentPassword(""); toast.success("Password updated.");
     } catch (error) { toast.error(error instanceof Error ? error.message : "Your password could not be changed."); }
     finally { setBusy(false); }

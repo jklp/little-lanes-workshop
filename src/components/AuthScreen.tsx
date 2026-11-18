@@ -23,7 +23,7 @@ export function AuthScreen({ mode }: { mode: "signin" | "signup" }) {
         ? await supabase.auth.signUp({
             email,
             password,
-            options: { data: { first_name: first.trim(), last_name: last.trim() } },
+            options: { emailRedirectTo: window.location.origin, data: { first_name: first.trim(), last_name: last.trim() } },
           })
         : await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);

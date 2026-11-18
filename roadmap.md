@@ -1,6 +1,6 @@
 # Landing and accounts
-- [ ] Public landing, auth links, and private navigation
-- [ ] Name/password settings and secure Free card cap
-- [ ] Pricing and account upgrade section
-- [ ] Tests and signed-in verification
+- [x] Public landing, auth links, and private navigation
+- [x] Name/password settings and secure Free card cap
+- [x] Pricing and account upgrade section
+- [x] Tests and signed-in verification
 - [ ] Paddle activation — blocked until Lovable upgrade; live support requires a support contact

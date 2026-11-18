@@ -34,5 +34,5 @@ use the editor.
 - Public landing and auth live at top-level; private board and account pages live under the client-only authenticated layout to preserve private access on hard refresh.
 - Session state has one root subscriber and a shared context, preventing stale sign-in controls and competing auth listeners.
 - Plan entitlements are read-only to users and card counts are atomically enforced by database triggers, preventing self-upgrades and concurrent limit bypasses.
-- Name changes reauthenticate the caller before updating only that caller's auth record; the lifecycle trigger synchronizes profile names so sign-in and display names remain aligned.
+- Name and password changes reauthenticate the caller before updating only that caller's auth record; the lifecycle trigger synchronizes profile names so sign-in and display names remain aligned. Use authenticated server operations for password updates because browser auth updates fail through the managed preview proxy.
 - Share prices and UI allowances through the plan module; verified subscription integration must update entitlements before paid benefits become available.
