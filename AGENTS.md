@@ -36,3 +36,4 @@ use the editor.
 - Plan entitlements are read-only to users and card counts are atomically enforced by database triggers, preventing self-upgrades and concurrent limit bypasses.
 - Name and password changes reauthenticate the caller before updating only that caller's auth record; the lifecycle trigger synchronizes profile names so sign-in and display names remain aligned. Use authenticated server operations for password updates because browser auth updates fail through the managed preview proxy.
 - Share prices and UI allowances through the plan module; verified subscription integration must update entitlements before paid benefits become available.
+- Stripe checkout uses inline price_data from the plan module and confirms the session server-side on return before updating entitlements; why: no dashboard price IDs to keep in sync.

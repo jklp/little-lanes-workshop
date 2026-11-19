@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useSession } from "@/lib/auth";
 import { changeAccountName, changeAccountPassword } from "@/lib/account.functions";
+import { createCheckout, confirmCheckout } from "@/lib/billing.functions";
 import { pageHead } from "@/lib/page-head";
 import type { PlanId } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,21 @@ function Account() {
   const [busy, setBusy] = useState(false);
   const [plan, setPlan] = useState<PlanId>("free");
   const [count, setCount] = useState(0);
+  const checkout = useServerFn(createCheckout);
+  const confirm = useServerFn(confirmCheckout);
+  async function upgrade(target: "basic" | "premium") {
+    setBusy(true);
+    try { const { url } = await checkout({ data: { plan: target } }); window.location.href = url; }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Checkout could not be started."); setBusy(false); }
+  }
+  useEffect(() => {
+    if (!session) return;
+    const sessionId = new URLSearchParams(window.location.search).get("session_id");
+    if (!sessionId) return;
+    window.history.replaceState(null, "", "/account");
+    confirm({ data: { sessionId } }).then(r => { setPlan(r.plan); toast.success(`You're now on ${r.plan === "basic" ? "Basic" : "Premium"}.`); })
+      .catch(error => toast.error(error instanceof Error ? error.message : "We couldn't confirm this payment."));
+  }, [session]);
   useEffect(() => {
     if (!session) return;
     void Promise.all([
@@ -71,6 +87,6 @@ function Account() {
         <Button disabled={busy} type="submit">Change Password</Button>
       </form>
     </section>
-    <section className="py-10"><div className="mb-7 flex items-end justify-between"><h2 className="text-lg font-semibold">Your plan</h2><p className="text-sm text-muted-foreground">{plan === "free" ? `${count} / 10 cards · Free` : `${count} cards · ${plan === "basic" ? "Basic" : "Premium"}`}</p></div><PlanOptions current={plan} /><p className="mt-5 text-sm text-muted-foreground">Paid subscriptions are not yet available.</p></section>
+    <section className="py-10"><div className="mb-7 flex items-end justify-between"><h2 className="text-lg font-semibold">Your plan</h2><p className="text-sm text-muted-foreground">{plan === "free" ? `${count} / 10 cards · Free` : `${count} cards · ${plan === "basic" ? "Basic" : "Premium"}`}</p></div><PlanOptions current={plan} onUpgrade={upgrade} busy={busy} /><p className="mt-5 text-sm text-muted-foreground">Payments are handled securely by Stripe.</p></section>
   </div>;
 }
